@@ -1,6 +1,7 @@
+#!/usr/bin/env node
+
 var app = require('commander');
 var inquirer = require('inquirer');
-var request = require('request');
 var Configstore = require('configstore');
 var conf = new Configstore('elephant');
 var wrap = require('wordwrap')(80);
@@ -59,19 +60,19 @@ var loginAttemp = {};
 
 inquirer.prompt(questions).then(function (answers) {
   loginAttemp = answers;
-  return auth.getSessionId(answers.apiKey, answers.email, auth.createPasswordHashBytes(String(answers.password)));
+  return auth.getSessionId(answers.apiKey, answers.email, auth.createPasswordHashBytes(answers.password));
 })
-.then(function(res){
-  conf.set('email', loginAttemp.email);
-  conf.set('passwordHash', auth.createPasswordHashBytes(String(loginAttemp.password)));
-  conf.set('apiKey', loginAttemp.apiKey);
-  conf.set('sessionId', res.data.sessionId);
-  console.log(`The account ${loginAttemp.email} has been successfully authenticated`);
-})
-.catch(function (err) {
-  if (err.response) {
-    console.log(`${err.response.status} ${err.response.statusText}`);
-  } else {
-    console.log(`${err.message}`);
-  }
-});
+  .then(function(res){
+    conf.set('email', loginAttemp.email);
+    conf.set('passwordHash', auth.createPasswordHashBytes(loginAttemp.password));
+    conf.set('apiKey', loginAttemp.apiKey);
+    conf.set('sessionId', res.data.sessionId);
+    console.log(`The account ${loginAttemp.email} has been successfully authenticated`);
+  })
+  .catch(function (err) {
+    if (err.response) {
+      console.log(`${err.response.status} ${err.response.statusText}`);
+    } else {
+      console.log(`${err.message}`);
+    }
+  });
