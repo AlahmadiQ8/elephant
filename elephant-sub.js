@@ -9,34 +9,32 @@ var columnify     = require('columnify');
 var moment        = require('moment');
 var api           = require('./lib/api');
 var utils         = require('./lib/utils');
-var printDevice   = require('./lib/printDevice');
+var printSub      = require('./lib/printSub');
+var DataObject    = require('./lib/DataObject');
 
 app
-  .description('Get all devices')
+  .description('Get account subscription information')
   .option('-u, --user [user]', 'Specify target user (only if you are an admin)')
   .option('-a, --all', 'Print all device properties')
   .parse(process.argv);
-
-
 
 var conf;
 if (app.user !== undefined){
   conf = {headers: {userId: app.user}};
 }
 
-api.get('/devices', conf)
-  .then(function(res){
-    var devices = res.data;
+api.get('/account/subscription', conf)
+  .then(function(res) {
+    var sub = res.data;
     var keys; 
     if (!app.all){
-      keys = ['deviceName', 'operatingSystem', 'lastConnected', 'version'];
+      keys = ['subscriptionName', 'subscriptionDescriptor', 'maxFileLength', 'capacity', 'subscriptionState'];
     }
     console.log('\n' + chalk.yellow('=========================='));
-    utils.filterKeysInArrayOfObjects(devices, keys)
-    .map(function (obj) { 
-      return obj.transformObjectToKeyValueArray()
-    })
-    .forEach(printDevice);
+    var sub = new DataObject(sub)
+      .filterKeysFromObject(keys)
+      .transformObjectToKeyValueArray();
+    printSub(sub);
   })
   .catch(function (err) {
     if (err.response) {

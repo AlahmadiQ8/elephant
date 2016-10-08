@@ -1,7 +1,9 @@
 var chalk = require('chalk');
 var columnify = require('columnify');
 var moment = require('moment');
-var utils = require('./lib/utils');
+// var utils = require('./lib/utils');
+var DataObject    = require('./lib/DataObject');
+var printSubscription    = require('./lib/printSubscription');
 
 
 var account = {
@@ -18,46 +20,18 @@ var account = {
   "unlimitedStorage": false
 }
 
-
-
 var filt = ['subscriptionName', 'subscriptionDescriptor', 'maxFileLength', 'capacity', 'subscriptionState'];
-
-function DataObject(content) {
-  utils.extend(this, content);
-}
-DataObject.prototype.filterKeysFromObject = filterKeysFromObject;
-DataObject.prototype.transformObjectToKeyValueArray = transformObjectToKeyValueArray;
-
-function filterKeysFromObject(info){
-  Object.keys(this).filter( v => {
-    return info.indexOf(v)==-1;
-  }).forEach( v => {
-    delete this[v];
-  });
-  return this
-}
-
-function transformObjectToKeyValueArray(){
-  var transformed = [];
-  for (var info in this) {
-    if (this.hasOwnProperty(info)) {
-      transformed.push({key: info, value: this[info]});
-    }
-  };
-  return transformed;
-}
 
 
 var data = new DataObject(account)
   .filterKeysFromObject(filt)
   .transformObjectToKeyValueArray();
 
-// utils.filterKeysFromObject.call(account, filt)
 
 
 // .map(transformObjectToKeyValueArray)
 // .map(printDevice)
-
-console.log(data);
+console.log('\n' + chalk.yellow('=========================='));
+printSubscription(data);
 
 
