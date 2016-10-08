@@ -5,13 +5,13 @@ var Configstore   = require('configstore');
 var conf          = new Configstore('elephant');
 var chalk         = require('chalk');
 var api           = require('./lib/api');
-var printSub      = require('./lib/printSub');
+var printUsage      = require('./lib/printUsage');
 var DataObject    = require('./lib/DataObject');
 
 app
-  .description('Get account subscription information')
+  .description('Get account storage usage')
   .option('-u, --user [user]', 'Specify target user (only if you are an admin)')
-  .option('-a, --all', 'Print all subscription object properties')
+  .option('-a, --all', 'Print all usage object properties')
   .parse(process.argv);
 
 var conf;
@@ -19,18 +19,18 @@ if (app.user !== undefined){
   conf = {headers: {userId: app.user}};
 }
 
-api.get('/account/subscription', conf)
+api.get('/account/usage', conf)
   .then(function(res) {
-    var sub = res.data;
+    var usage = res.data;
     var keys; 
     if (!app.all){
-      keys = ['subscriptionName', 'subscriptionDescriptor', 'maxFileLength', 'capacity', 'subscriptionState'];
+      keys = ['activeSize', 'versionSize', 'archivedSize', 'trashSize'];
     }
     console.log('\n' + chalk.yellow('=========================='));
-    var sub = new DataObject(sub)
+    var usage = new DataObject(usage)
       .filterKeysFromObject(keys)
       .transformObjectToKeyValueArray();
-    printSub(sub);
+    printUsage(usage);
   })
   .catch(function (err) {
     if (err.response) {
