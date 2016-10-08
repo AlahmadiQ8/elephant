@@ -31,9 +31,12 @@ api.get('/devices', conf)
     if (!app.all){
       keys = ['deviceName', 'operatingSystem', 'lastConnected', 'version'];
     }
+
     utils.filterKeysInArrayOfObjects(devices, keys)
-    .map(utils.transformObjectToKeyValueArray)
-    .map(printDevice);
+    .map(function (obj) { 
+      return obj.transformObjectToKeyValueArray()
+    })
+    .forEach(printDevice);
   })
   .catch(function (err) {
     if (err.response) {
