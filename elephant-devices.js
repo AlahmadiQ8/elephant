@@ -29,7 +29,7 @@ api.get('/devices', conf)
     var devices = res.data;
     var keys; 
     if (!app.all){
-      keys = ['deviceName', 'operatingSystem', 'lastConnected', 'version'];
+      keys = ['deviceName', 'operatingSystem', 'lastConnected', 'version', 'shares'];
     }
     console.log('\n' + chalk.yellow('=========================='));
     utils.filterKeysInArrayOfObjects(devices, keys)
