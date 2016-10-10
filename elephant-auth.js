@@ -10,7 +10,7 @@ var auth = require('./lib/auth');
 
 app
   .description('Authenticate User Account')
-  .option('-e, --env [env]', 'Select environment: QA, STG, LIVE [QA]', /^(QA|STG|LIVE)$/i, 'QA')
+  .option('-e, --env [env]', 'Select environment: QA, STG, LIVE [LIVE]', /^(QA|STG|LIVE)$/i, 'LIVE')
   .parse(process.argv);
 
 
