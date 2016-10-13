@@ -54,6 +54,9 @@ switch (app.env.toLowerCase()) {
     break;
   case 'live':
     conf.set('baseUrl', 'https://rest.elephantdrive.com');
+    break;
+  default: 
+    conf.set('baseUrl', 'https://rest.elephantdrive.com');
 }
 
 var loginAttemp = {};
