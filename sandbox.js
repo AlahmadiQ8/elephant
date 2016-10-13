@@ -47,6 +47,42 @@ var backup = {
         },
         {
           "verb": 1,
+          "predicate": 0,
+          "cutoff": "2016-09-19T12:30:38",
+          "exts": ['jpg', 'png', 'random'],
+          "length": 0,
+          "prefixes": [],
+          "path": "/Users/mohammadm/Desktop"
+        },
+        {
+          "verb": 4,
+          "predicate": 0,
+          "cutoff": "2016-09-19T12:30:38",
+          "exts": ['jpg', 'png', 'random'],
+          "length": 0,
+          "prefixes": [],
+          "path": "/Users/mohammadm/Desktop"
+        },
+        {
+          "verb": 3,
+          "predicate": 0,
+          "cutoff": "2016-09-19T12:30:38",
+          "exts": ['jpg', 'png', 'random'],
+          "length": 15,
+          "prefixes": [],
+          "path": "/Users/mohammadm/Desktop"
+        },
+        {
+          "verb": 0,
+          "predicate": 0,
+          "cutoff": "2016-09-19T12:30:38",
+          "exts": ['ex', 'dsstore', 'gitignore'],
+          "length": 0,
+          "prefixes": [],
+          "path": "/Users/mohammadm/Desktop"
+        },
+        {
+          "verb": 1,
           "predicate": 5,
           "cutoff": "2016-09-19T12:30:38",
           "exts": [],
@@ -375,6 +411,45 @@ function getPaths(rs, path){
   return paths; 
 }
 
+function getExts(rs, ext){
+  var which;
+  if (ext=='included'){
+    which = {predicate: 0, verb: 1};
+  } else {
+    which = {predicate: 0, verb: 0};
+  }
+  exts = [];
+  rs.filter(function(value){
+    return value['predicate']==which.predicate 
+           && value['verb']==which.verb;;
+    }).forEach(function(value){
+
+      exts = exts.concat(value.exts);
+    });
+  return exts.join(', '); 
+}
+
+function getVaLength(rs, va){
+  var which;
+  if (va=='archives'){
+    which = {predicate: 0, verb: 4};
+  } else if (va=='versions') {
+    which = {predicate: 0, verb: 3};
+  } else {
+    which = {predicate: 0, verb: 2};
+  }
+  var t = rs.filter(function(value){
+    // console.log(String(value['predicate'])+ ' ' + String(value['verb'])) 
+    return value['predicate']==which.predicate 
+           && value['verb']==which.verb;;
+    });
+  if (t.length != 0) {
+    return t[0]['length'];
+  }
+  return undefined; 
+}
+
+
 function processBackupConfiguration(json){
   
   var deviceName = json.settingsMap.Host; 
@@ -391,33 +466,58 @@ function processBackupConfiguration(json){
 
   var backupConfigs = [];
 
-  json.backupRuleSets.forEach(function(val){
-    var obj = {
-      'name': val.name,
-      'enabled': val.enabled ? 
-                 chalk.green(val.enabled)
-                 : chalk.red(val.enabled),
-      'scheduledType': scheduledType[val['scheduleType']],
-      'LastCompleted': moment(val['dtLastCompleted']).fromNow(),
-    };
+  json.backupRuleSets
+    .sort(function(a, b){
+      if (a.enabled) return -1
+      if (b.enabled) return 1
+      return 0
+    })
+    .forEach(function(val){
+      var obj = {
+        'name': val.name,
+        'enabled': val.enabled ? 
+                   chalk.green(val.enabled)
+                   : chalk.red(val.enabled),
+        'scheduledType': scheduledType[val['scheduleType']],
+        'LastCompleted': moment(val['dtLastCompleted']).fromNow(),
+      };
 
-    var includePaths = getPaths(val['brs'], 'included');
-    if (Object.keys(includePaths)!=0){
-      obj.includePaths = undefined;
-      extend(obj, includePaths);
-    }
-    var excludePaths = getPaths(val['brs'], 'excluded');
-    if (Object.keys(excludePaths)!=0){
-      obj.excludePaths = undefined;
-      extend(obj, excludePaths);
-    }
-    
+      var includedExts = getExts(val['brs'], 'included');
+      if (includedExts.length!=0){
+        obj.includedExts = includedExts;
+      }
+      var excludedExts = getExts(val['brs'], 'excluded');
+      if (excludedExts.length!=0){
+        obj.excludedExts = excludedExts;
+      }
+      var archLength = getVaLength(val['brs'], 'archives');
+      if (archLength != undefined) {
+        obj.keepArchives = String(archLength) + ' days';  
+      }
+      var versionLength = getVaLength(val['brs'], 'versions');
+      if (versionLength != undefined) {
+        obj.keepVersions = String(versionLength) + ' days';  
+      }
+      var versionNumber = getVaLength(val['brs'], 'versionNumber');
+      if (versionNumber != undefined) {
+        obj.versionNumber = String(versionNumber);  
+      }
+      var includePaths = getPaths(val['brs'], 'included');
+      if (Object.keys(includePaths)!=0){
+        obj.includePaths = undefined;
+        extend(obj, includePaths);
+      }
+      var excludePaths = getPaths(val['brs'], 'excluded');
+      if (Object.keys(excludePaths)!=0){
+        obj.excludePaths = undefined;
+        extend(obj, excludePaths);
+      }
 
-    backupConfigs.push(new DataObject(obj));
-  })
+      backupConfigs.push(new DataObject(obj));
+    })
 
 
-  return backupConfigs;
+  return {deviceConfig: deviceConfig, backupConfigs: backupConfigs};
 }
 
 
@@ -428,19 +528,26 @@ var filt = ['subscriptionName', 'subscriptionDescriptor', 'maxFileLength', 'capa
 
 // .map(transformObjectToKeyValueArray)
 // .map(printDevice)
-console.log('\n' + chalk.yellow('=========================='));
-processBackupConfiguration(backup)
-.map(function (obj) { 
-  return obj.transformObjectToKeyValueArray()
-}).forEach(function(obj){
-  var options = {
-    showHeaders: false,
-    // truncate: true,
-    preserveNewLines: true,
-    config: {
-      key: {minWidth: 30}
-    }
+var options = {
+  showHeaders: false,
+  // truncate: true,
+  preserveNewLines: true,
+  config: {
+    key: {minWidth: 30}
   }
+}
+
+console.log('\n' + chalk.yellow('=========================='));
+data = processBackupConfiguration(backup)
+console.log(data)
+
+console.log('\n' + chalk.underline.yellow('Device Settings'));
+console.log(columnify(data.deviceConfig, options));
+
+data.backupConfigs.map(function (obj) { 
+  return obj.transformObjectToKeyValueArray();
+}).forEach(function(obj){
+
   console.log('\n' + chalk.underline.cyan(obj[0].value));
   delete obj[0];
   console.log(columnify(obj, options))
