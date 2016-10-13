@@ -358,12 +358,19 @@ var backup = {
   "networkMaxUsage": 0
 }
 
-function getIncludePaths(rs){
+function getPaths(rs, path){
+  var which;
+  if (path=='included'){
+    which = {predicate: 5, verb: 1};
+  } else {
+    which = {predicate: 5, verb: 0};
+  }
   paths = {}
   rs.filter(function(value){
-    return value['predicate']==5 && value['verb']==1;
+    return value['predicate']==which.predicate 
+           && value['verb']==which.verb;;
     }).forEach(function(value){
-      paths[chalk.gray(value.path)] = undefined; 
+      paths[chalk.gray('- '+value.path)] = undefined; 
     });
   return paths; 
 }
@@ -394,19 +401,23 @@ function processBackupConfiguration(json){
       'LastCompleted': moment(val['dtLastCompleted']).fromNow(),
     };
 
-    var includePaths = getIncludePaths(val['brs']);
+    var includePaths = getPaths(val['brs'], 'included');
     if (Object.keys(includePaths)!=0){
       obj.includePaths = undefined;
       extend(obj, includePaths);
     }
+    var excludePaths = getPaths(val['brs'], 'excluded');
+    if (Object.keys(excludePaths)!=0){
+      obj.excludePaths = undefined;
+      extend(obj, excludePaths);
+    }
     
 
-    backupConfigs.push(obj);
+    backupConfigs.push(new DataObject(obj));
   })
 
 
-
-  console.log(backupConfigs);
+  return backupConfigs;
 }
 
 
@@ -419,5 +430,22 @@ var filt = ['subscriptionName', 'subscriptionDescriptor', 'maxFileLength', 'capa
 // .map(printDevice)
 console.log('\n' + chalk.yellow('=========================='));
 processBackupConfiguration(backup)
+.map(function (obj) { 
+  return obj.transformObjectToKeyValueArray()
+}).forEach(function(obj){
+  var options = {
+    showHeaders: false,
+    // truncate: true,
+    preserveNewLines: true,
+    config: {
+      key: {minWidth: 30}
+    }
+  }
+  console.log('\n' + chalk.underline.cyan(obj[0].value));
+  delete obj[0];
+  console.log(columnify(obj, options))
+})
+
+
 
 
