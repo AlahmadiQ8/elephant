@@ -54,24 +54,6 @@ elephant -u other_user@elepha.net usage
 
 Here are sample output of some of the commands:
 
-```bash
-==========================
+![](https://elephantdrive.beanstalkapp.com/edcli/download/git/demo.gif)
 
-Usage
-activeSize                     7.31 GB 
-versionSize                    28.15 MB
-trashSize                      0 B     
-archivedSize                   80.74 MB
-
-==========================
-
-Subscription
-subscriptionName               Personal Monthly - 50 GB
-subscriptionDescriptor         Personal Plan           
-maxFileLength                  1 GB                    
-capacity                       50 GB                   
-subscriptionState              Active
-```
-
-## History
 
