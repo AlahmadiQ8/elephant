@@ -5,8 +5,11 @@ var Configstore   = require('configstore');
 var conf          = new Configstore('elephant');
 var chalk         = require('chalk');
 var api           = require('./lib/api');
-var printUsage      = require('./lib/printUsage');
+var printUsage    = require('./lib/printUsage');
 var DataObject    = require('./lib/DataObject');
+var utils         = require('./lib/utils');
+
+var cache         = utils.getStoreJson();
 
 app
   .description('Get account storage usage')
@@ -14,12 +17,30 @@ app
   .option('-a, --all', 'Print all usage object properties')
   .parse(process.argv);
 
-var conf;
-if (app.user !== undefined){
-  conf = {headers: {userId: app.user}};
+var promise;
+if (typeof app.user === 'undefined'){
+  promise = Promise.resolve({});
+} else {
+  if (typeof cache[app.user] === 'undefined') {
+    promise = api.get(`/account/information?email=${app.user}`)
+      .then(function(res){
+        cache[app.user] = res.data.iUserID;
+        utils.storeJson(cache);
+        return Promise.resolve({headers: {userId: res.data.iUserID}})
+      });
+  } else {
+    promise = Promise.resolve({headers: {userId: cache[app.user]}});
+  }
 }
 
-api.get('/account/usage', conf)
+promise
+  .then(function(conf){
+    if (conf){
+      return api.get('/account/usage', conf);
+    } else {
+      return api.get('/account/usage');
+    }
+  })
   .then(function(res) {
     var usage = res.data;
     var keys; 

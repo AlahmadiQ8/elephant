@@ -14,6 +14,8 @@ var inquirer      = require('inquirer');
 var _             = require('lodash');
 var deviceConfig  = require('./lib/deviceConfig');
 
+var cache         = utils.getStoreJson();
+
 app
   .description('Get specific device configs')
   .option('-u, --user [user]', 'Specify target user (only if you are an admin)')
@@ -37,7 +39,30 @@ var options = {
 
 var devices = [];
 
-api.get('/devices', conf)
+var promise;
+if (typeof app.user === 'undefined'){
+  promise = Promise.resolve({});
+} else {
+  if (typeof cache[app.user] === 'undefined') {
+    promise = api.get(`/account/information?email=${app.user}`)
+      .then(function(res){
+        cache[app.user] = res.data.iUserID;
+        utils.storeJson(cache);
+        return Promise.resolve({headers: {userId: res.data.iUserID}})
+      });
+  } else {
+    promise = Promise.resolve({headers: {userId: cache[app.user]}});
+  }
+}
+
+promise
+  .then(function(conf){
+    if (conf){
+      return api.get('/devices', conf);
+    } else {
+      return api.get('/devices');
+    }
+  })
   .then(function(res){
     devices = res.data;
     var choices = devices.map(function(val){
@@ -55,6 +80,11 @@ api.get('/devices', conf)
     return inquirer.prompt(question)
   }).then(function(answer){
     device = _.find(devices, {deviceName: answer.device});
+    if (typeof app.user !== 'undefined') {
+      var conf = {headers: {userId: cache[app.user]}};
+    } else {
+      var conf = {};
+    }
     return api.get(`/devices/backupconfiguration/${device.deviceId}`, conf);
   }).then(function(res){
     data = deviceConfig.processBackupConfiguration(res.data);

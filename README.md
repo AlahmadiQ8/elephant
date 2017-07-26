@@ -30,7 +30,7 @@ elephant auth --env [ENVIRONMENT]
 
 Where ```ENVIRONMENT``` is the environment you want to log in with (QA, STG, or LIVE). It is set to LIVE by default. You will be prompted to enter your credentials and an API key. 
 
-### Quering users' information 
+### Querying users' information
 
 You have several commands that gets you user's account information. Here is a list of the currently available commands: 
 

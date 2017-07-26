@@ -7,6 +7,11 @@ var chalk         = require('chalk');
 var api           = require('./lib/api');
 var printSub      = require('./lib/printSub');
 var DataObject    = require('./lib/DataObject');
+var utils         = require('./lib/utils');
+
+var cache         = utils.getStoreJson();
+
+
 
 app
   .description('Get account subscription information')
@@ -14,12 +19,30 @@ app
   .option('-a, --all', 'Print all subscription object properties')
   .parse(process.argv);
 
-var conf;
-if (app.user !== undefined){
-  conf = {headers: {userId: app.user}};
+var promise;
+if (typeof app.user === 'undefined'){
+  promise = Promise.resolve({});
+} else {
+  if (typeof cache[app.user] === 'undefined') {
+    promise = api.get(`/account/information?email=${app.user}`)
+      .then(function(res){
+        cache[app.user] = res.data.iUserID;
+        utils.storeJson(cache);
+        return Promise.resolve({headers: {userId: res.data.iUserID}})
+      });
+  } else {
+    promise = Promise.resolve({headers: {userId: cache[app.user]}});
+  }
 }
 
-api.get('/account/subscription', conf)
+promise
+  .then(function(conf){
+    if (conf){
+      return api.get('/account/subscription', conf);
+    } else {
+      return api.get('/account/subscription');
+    }
+  })
   .then(function(res) {
     var sub = res.data;
     var keys; 
